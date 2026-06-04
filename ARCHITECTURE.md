@@ -1,235 +1,149 @@
 # System Architecture
 
+This document covers how the system works, why it's structured this way, and how to extend it.
+
 ## Overview
 
-NSE-Alpha is a **daily signal system** that predicts 5-day forward returns for NSE India equities using machine learning. The pipeline follows three phases:
+The project predicts 5-day forward returns for 100 NSE stocks using machine learning. It's built in three phases:
 
-```
-PHASE 1 (Research)     → PHASE 2 (Daily Production)    → PHASE 3 (Dashboard)
-   Notebooks              Signal Generation               Web Interface
-   Feature Design         Automated Inference             Risk Monitoring
-   Model Training         CSV Output (50+ stocks)         Performance Analytics
-```
+Phase 1 (research) - notebook-based exploration and model development
+Phase 2 (production) - automated daily signal generation
+Phase 3 (dashboard) - web interface for monitoring signals and performance
 
-## Data Flow
+## Data Pipeline
 
-```
-                          ┌─ Technical Indicators (RSI, MACD, etc.)
-Market Data (OHLCV) ──┤
-                          ├─ Macro Features (VIX, USD/INR, Repo Rate)
-                          └─ Sector Indices
-                                    ↓
-                          Feature Engineering Pipeline
-                                    ↓
-                          Normalized Feature Matrix
-                                    ↓
-                          LightGBM Model (Walk-Forward Trained)
-                                    ↓
-                    Prediction + Confidence Score
-                                    ↓
-                    Risk Filters & Position Sizing
-                                    ↓
-        Output: Buy / Sell / Hold Signals (Confidence 0-1)
-```
+Market data flows through the system in this order:
 
-## Core Modules
+Raw market data (OHLCV) -> Technical indicators -> Macro features -> Feature engineering -> LightGBM model -> Predictions -> Signal output
 
-### 1. **data/** — Data Acquisition & Validation
+## Modules
 
-| Module | Responsibility |
-|--------|-----------------|
-| `universe.py` | Manages Nifty 50 + Next 50 ticker lists with sector mapping |
-| `downloader.py` | Fetches OHLCV, VIX, sector indices, macro data from yfinance/FRED |
-| `validate.py` | Data quality checks: missing values, outliers, stale data |
+### config/
 
-**Key Design Decision:** All data is cached locally in `data/cache/` to enable offline model training and fast feature rebuilds.
+Single configuration file (`settings.py`) that controls:
 
----
+- Universe definitions (Nifty 50, Next 50)
+- Feature parameters (RSI periods, MACD settings, etc.)
+- Model hyperparameters
+- Risk management rules
+- API credentials
 
-### 2. **features/** — Feature Engineering Pipeline
+Changing a parameter here updates the entire pipeline consistently.
 
-| Module | Purpose | Example Features |
-|--------|---------|-------------------|
-| `technical.py` | Momentum & volatility indicators | RSI(14), MACD, Bollinger Bands, ATR, OBV, momentum ratios |
-| `macro.py` | Macro economic context | India VIX, sector returns, USD/INR, LIBOR rate |
-| `pipeline.py` | Orchestrator for full feature matrix | Combines all features, handles missing values, normalizes |
+### data/
 
-**Key Design Decision:** 50+ features are engineered from ~5 raw time series, keeping the feature space manageable while capturing market dynamics.
+Three modules handle data:
 
----
+`universe.py` - Maintains lists of Nifty 50 and Next 50 stocks with sector mapping.
 
-### 3. **models/** — ML Training & Inference
+`downloader.py` - Fetches OHLCV data from yfinance, macro data from FRED API. Data is cached locally in `data/cache/` to avoid repeated downloads.
 
-| Module | Responsibility |
-|--------|-----------------|
-| `train.py` | LightGBM model training with walk-forward validation |
-| `predict.py` | Daily inference: loads trained model, generates signals |
+`validate.py` - Quality checks: missing values, outliers, data staleness. Runs before training to catch issues early.
 
-**Key Architecture:**
-- **Walk-Forward Validation:** 6-month test windows prevent data leakage and ensure realistic OOS performance
-- **Labels:** Binary classification of 5-day forward returns (up/down) with confidence calibration
-- **Hyperparameters:** Stored in `config/settings.py` for reproducibility and easy tuning
+### features/
 
----
+Feature engineering is split into two modules:
 
-### 4. **backtest/** — Historical Validation
+`technical.py` - Momentum and volatility indicators (RSI, MACD, Bollinger Bands, ATR, OBV, momentum ratios).
 
-| Module | Responsibility |
-|--------|-----------------|
-| `engine.py` | Trade simulator: entry/exit logic, position sizing, risk limits |
-| `metrics.py` | Performance calculation: Sharpe, drawdown, win rate, CAGR |
-| `report.py` | HTML report generation with equity curve and monthly returns |
+`macro.py` - Macro economic context (India VIX, sector returns, USD/INR, LIBOR rate).
 
-**Key Features:**
-- Transaction costs & slippage modelled at 0.15% per trade
-- Risk limits: max position size, portfolio-level drawdown constraints
-- Walk-forward evaluation ensures all metrics are out-of-sample
+`pipeline.py` - Combines all features, handles missing values, normalizes output.
 
----
+The feature matrix has 50+ indicators engineered from about 5 raw time series.
 
-### 5. **config/** — Single Source of Truth
+### models/
 
-`settings.py` contains:
-- Universe definitions (Nifty 50/Next 50)
-- Feature parameters (indicator periods, thresholds)
-- Model hyperparameters (learning rate, max depth, regularization)
-- Risk management rules (max drawdown, position limits)
-- API credentials (loaded from `.env`)
+Two modules manage model training and inference:
 
-**Design Benefit:** Change any system behavior in one place; entire pipeline updates.
+`train.py` - LightGBM model trained with walk-forward validation. 6-month test windows ensure no data leakage.
 
----
+`predict.py` - Loads trained model and generates daily signals. Outputs CSV with ticker, signal direction, confidence score, expected return, entry price.
 
-## Execution Workflows
+Walk-forward validation means each model is trained on data up to a point, then tested on the next 6 months. This prevents look-ahead bias and gives realistic performance metrics.
 
-### Workflow 1: Training Pipeline (One-time / Retraining)
+### backtest/
 
-```
-1. make download      → Fetch 5 years of market data
-2. make validate      → Quality checks
-3. make features      → Build 50+ features
-4. make train         → LightGBM with walk-forward CV
-5. make backtest      → Validate on historical data
-6. make report        → Generate HTML backtest report
-```
+Three modules for historical validation:
 
-### Workflow 2: Daily Signal Generation
+`engine.py` - Trade simulator. Applies entry/exit rules, position sizing, risk limits.
 
-```
-Time: 3:30 PM IST (after NSE close)
-1. Fetch latest OHLCV data
-2. Compute technical + macro features
-3. Load trained model from disk
-4. Run inference on 100 stocks
-5. Apply risk filters & confidence thresholds
-6. Output signals to CSV: outputs/signals/signals_{YYYY-MM-DD}.csv
-```
+`metrics.py` - Calculates performance: Sharpe ratio, max drawdown, win rate, CAGR, profit factor.
 
-### Workflow 3: Dashboard Monitoring
+`report.py` - Generates HTML backtest report with equity curve and monthly returns.
 
-```
-Dashboard (Streamlit) reads:
-  - Latest signals from signals/ directory
-  - Backtest report (HTML)
-  - Equity curve (CSV)
-  - Performance metrics (live calculation)
-```
+All backtest metrics are out-of-sample. Transaction costs (0.15% per trade) and slippage are included.
 
----
+## Why These Choices
 
-## Key Design Decisions
+### LightGBM
 
-### Why LightGBM?
+Chosen because:
+- Trains fast on high-dimensional data
+- Can be retrained daily if needed
+- Feature importance is interpretable
+- Robust to overfitting on small datasets
 
-- **Fast Training:** Handles high-dimensional feature space efficiently
-- **Walk-Forward Ready:** Retrains in minutes, enabling frequent model updates
-- **Interpretable:** Feature importance is human-readable
-- **Robust:** Less prone to overfitting than deep neural networks on small datasets
+### Walk-Forward Validation
 
-### Why Walk-Forward Validation?
+Walk-forward validation prevents overfitting and gives realistic metrics. Each test period uses a model trained only on prior data, matching live trading behavior.
 
-- **Realistic Performance:** All metrics are out-of-sample; no data leakage
-- **Time-Aware:** Respects temporal order of data; no look-ahead bias
-- **Production-Ready:** Metrics match live trading performance better
+### Confidence Scores
 
-### Why Confidence Scores?
-
-- Each prediction includes a probability estimate (0-1)
-- Signals below 0.60 confidence are flagged as non-actionable
-- Enables risk-conscious position sizing: high confidence → larger position
+Each prediction includes a probability (0-1). Signals below 0.60 confidence are marked non-actionable. This enables risk-aware position sizing.
 
 ### Universe: Nifty 50 + Next 50
 
-- **Liquidity:** Most liquid large-cap stocks in India
-- **Tradeable:** Low bid-ask spreads, sufficient volume
-- **Homogeneous:** Similar market dynamics, easier feature engineering
-- **Realistic Size:** 100 stocks = manageable for daily processing
+These 100 stocks are liquid enough to trade realistically. Feature engineering is simpler with homogeneous assets compared to mixing large-cap and micro-cap stocks.
 
----
+## Adding Features
 
-## Extensibility
+To add a new technical indicator:
 
-### Add New Features
+1. Implement in `features/technical.py`
+2. Update `features/pipeline.py` to include it
+3. Retrain with `make train`
 
-1. Implement in `features/technical.py` or `features/macro.py`
-2. Update `features/pipeline.py` to include in the feature matrix
-3. Retrain model with `make train`
-
-### Change Model Algorithm
-
-1. Edit `models/train.py` (replace LightGBM with XGBoost, CatBoost, etc.)
-2. Keep the same `predict_signals()` interface
-3. `predict.py` continues to work unchanged
-
-### Add New Data Sources
+To add a new data source:
 
 1. Add download logic to `data/downloader.py`
 2. Add validation checks to `data/validate.py`
 3. Reference in `features/pipeline.py`
 
----
+## Changing Models
 
-## Testing
+Want to try XGBoost or CatBoost instead? The interface is:
 
-Run validation before deploying:
+```python
+def train_model():
+    # Return trained model
+    return model
 
-```bash
-make validate      # Data quality checks
-make backtest      # Historical performance
+def predict_signals(model, features):
+    # Return predictions with confidence
+    return predictions
 ```
 
----
+As long as these functions work the same way, `predict.py` continues to work unchanged.
 
 ## Performance Constraints
 
-| Constraint | Current | Limit |
-|-----------|---------|-------|
-| Feature compute time | ~2 sec | < 30 sec |
-| Model inference | ~1 sec | < 5 sec |
-| Total pipeline (after data download) | ~5 min | < 30 min |
-| Memory usage | ~500 MB | < 2 GB |
+Current system runs in:
 
----
+- Feature computation: ~2 seconds
+- Model inference: ~1 second
+- Total pipeline (after data download): ~5 minutes
+- Memory usage: ~500 MB
 
-## File Size Estimates
+Max constraints:
 
-| Directory | Size | Notes |
-|-----------|------|-------|
-| `data/cache/` | ~500 MB | 5 years OHLCV + macro data |
-| `models/saved/` | ~50 MB | Trained model artifacts |
-| `outputs/signals/` | ~1 MB | Historical signal CSVs |
+- Feature compute: 30 seconds
+- Inference: 5 seconds
+- Total: 30 minutes
+- Memory: 2 GB
 
----
+## File Sizes
 
-## Deployment Checklist
-
-- [ ] `.env` file configured with FRED_API_KEY
-- [ ] `data/cache/` populated with `make download`
-- [ ] Model trained with `make train`
-- [ ] Backtest passed with acceptable metrics
-- [ ] Daily signal generation runs without errors
-- [ ] Dashboard loads and displays latest signals
-
----
-
-**For contributing or questions, see [Development Guide](DEVELOPMENT.md).**
+Data cache: ~500 MB (5 years of OHLCV + macro data)
+Trained model: ~50 MB
+Historical signals: ~1 MB

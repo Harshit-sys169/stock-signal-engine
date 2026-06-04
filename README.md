@@ -1,35 +1,24 @@
 # Stock Signal Engine
 
-> **ML-powered daily trading signals for NSE India equities** | 16.3% CAGR | Walk-forward validated | Production-ready
+ML-powered daily trading signals for NSE India equities. A production system that predicts 5-day forward returns across 100 liquid large-cap stocks and generates actionable buy/sell signals with confidence scores.
 
-![CI](https://github.com/Harshit-sys169/stock-signal-engine/actions/workflows/ci.yml/badge.svg)
-![Python](https://img.shields.io/badge/python-3.11%2B-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Market](https://img.shields.io/badge/market-NSE%20India-orange)
-![Status](https://img.shields.io/badge/status-research%20%2F%20advisory-yellow)
+Backtest results: 16.3% CAGR vs 11.5% Nifty 50 buy-and-hold (2020-2024, walk-forward validation). All metrics are out-of-sample with realistic transaction costs and risk constraints.
 
-A production-grade machine learning system that predicts 5-day forward returns for 100 liquid NSE stocks (Nifty 50 + Next 50) and outputs daily Buy/Sell/Hold signals with confidence scores.
+## Overview
 
-**Key highlights:**
-- ✅ **16.3% CAGR** (vs 11.5% Nifty 50 buy-and-hold) | 2020–2024 out-of-sample backtest
-- ✅ **Walk-forward validated** — No look-ahead bias, realistic performance metrics
-- ✅ **Production-ready** — Runs daily after market close, generates signal CSV
-- ✅ **Full transparency** — Reproducible pipeline from data to backtest report
-- ✅ **Extensible architecture** — Easy to add features, swap models, or modify rules
+- 16.3% CAGR on 100 Nifty 50/Next 50 stocks (2020-2024)
+- Walk-forward validated with no look-ahead bias
+- Runs daily after market close, outputs signal CSV
+- Full pipeline reproducible from data to backtest report
+- Extensible architecture for adding features or swapping models
 
----
+## Documentation
 
-## Quick Links
+[Quickstart](QUICKSTART.md) | [Architecture](ARCHITECTURE.md) | [Development](DEVELOPMENT.md) | [Contributing](CONTRIBUTING.md)
 
-| 📖 | 🚀 | 🏗️ | 👨‍💻 |
-|-----|------|------|------|
-| [Quickstart](QUICKSTART.md) | [Architecture](ARCHITECTURE.md) | [Development](DEVELOPMENT.md) | [Contributing](CONTRIBUTING.md) |
+## Performance (2020-2024, Out-of-Sample)
 
----
-
-## Backtest Results — 2020 to 2024, Walk-Forward OOS
-
-> All numbers are out-of-sample only. Walk-forward validation with 6-month test windows. Transaction costs and slippage modelled at 0.15% per trade. No lookahead bias.
+Walk-forward validation with 6-month test windows. All results exclude look-ahead bias. Transaction costs and slippage modeled at 0.15% per trade.
 
 | Metric | NSE-Alpha v1 | Nifty 50 Buy and Hold |
 |---|---|---|

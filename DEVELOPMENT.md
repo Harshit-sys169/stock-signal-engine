@@ -1,58 +1,28 @@
-# Development Guide
+# Development
 
-Contributing to NSE-Alpha. Guidelines for code quality, testing, and extending the system.
+Guidelines for contributing to the project.
 
-## Project Structure Reference
-
-```
-stock-signal-engine/
-├── config/              # Configuration management
-├── data/                # Data acquisition and validation
-├── features/            # Feature engineering pipeline
-├── models/              # Model training and inference
-├── backtest/            # Backtesting and performance metrics
-├── dashboard/           # Streamlit web interface
-├── notebooks/           # Research and exploration
-├── scripts/             # Scheduled scripts (cron jobs)
-├── outputs/             # Generated signals and reports
-├── tests/               # Unit and integration tests (to add)
-└── .github/workflows/   # CI/CD pipelines
-```
-
-## Development Workflow
-
-### 1. Setup Development Environment
+## Setup
 
 ```bash
-# Clone and install
 git clone https://github.com/Harshit-sys169/stock-signal-engine.git
 cd stock-signal-engine
 
-# Create virtual environment
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
-# Install dependencies
 pip install -r requirements.txt
-
-# Install development tools (optional)
-pip install pytest black pylint mypy
+pip install pytest black pylint mypy  # optional dev tools
 ```
 
-### 2. Making Changes
+## Code Style
 
-**Branch Naming:**
-- `feature/description` — New features
-- `bugfix/description` — Bug fixes
-- `docs/description` — Documentation updates
-
-**Code Style:**
 - Follow PEP 8
 - Use type hints for function arguments and returns
 - Max line length: 100 characters
-- Use meaningful variable names (no single letters except in loops)
+- Use meaningful variable names
 
-**Example Function:**
+Example:
 
 ```python
 def build_feature_matrix(
@@ -81,17 +51,15 @@ def build_feature_matrix(
     return features
 ```
 
-### 3. Testing
+## Testing
 
-#### Run Existing Tests
+Run tests with:
 
 ```bash
 pytest tests/ -v
 ```
 
-#### Add New Tests
-
-Create test files in `tests/` directory matching the module structure:
+Create test files in `tests/` matching module structure:
 
 ```
 tests/
@@ -101,60 +69,33 @@ tests/
 └── test_backtest.py
 ```
 
-**Example Test:**
+## Commits
 
-```python
-import pytest
-from features.technical import calculate_rsi
+- Keep commits focused on one thing
+- Use clear commit messages
+- Example: "Add RSI indicator to technical features"
 
-def test_rsi_calculation():
-    """RSI should be between 0 and 100"""
-    prices = [100, 101, 102, 101, 100, 99, 98, 99, 100]
-    rsi = calculate_rsi(prices, period=14)
-    
-    assert 0 <= rsi <= 100
-```
+## Branches
 
-### 4. Documentation
+Name branches by type:
 
-**Docstring Format (NumPy style):**
+- `feature/description` - New features
+- `bugfix/description` - Bug fixes
+- `docs/description` - Documentation
 
-```python
-def function_name(param1, param2):
-    """
-    Short description on one line.
-    
-    Longer explanation if needed, describing the algorithm,
-    edge cases, or important design decisions.
-    
-    Parameters
-    ----------
-    param1 : type
-        Description of param1
-    param2 : type
-        Description of param2
-    
-    Returns
-    -------
-    type
-        Description of return value
-    
-    Raises
-    ------
-    ValueError
-        When parameter validation fails
-    
-    Examples
-    --------
-    >>> result = function_name(10, 20)
-    >>> print(result)
-    30
-    """
-```
+## Pull Request Process
 
-### 5. Common Development Tasks
+1. Fork the repository
+2. Create a feature branch
+3. Make changes and add tests
+4. Run lint checks
+5. Push and open a PR
+6. Address review comments
+7. Once approved, maintainers will merge
 
-#### Add a New Feature Indicator
+## Common Tasks
+
+### Add a New Feature Indicator
 
 1. Implement in `features/technical.py`:
 
@@ -164,21 +105,21 @@ def calculate_new_indicator(data: pd.DataFrame, period: int) -> pd.Series:
     return data['close'].rolling(period).mean()
 ```
 
-2. Update `features/pipeline.py` to include it:
+2. Update `features/pipeline.py`:
 
 ```python
 features['new_indicator'] = calculate_new_indicator(ohlcv_data, period=14)
 ```
 
-3. Retrain the model:
+3. Retrain:
 
 ```bash
 make train
 ```
 
-#### Debug Model Performance
+### Debug Model Performance
 
-1. Check feature importance:
+Check feature importance:
 
 ```python
 from models.train import train_model
@@ -190,37 +131,27 @@ plt.barh(range(len(importance)), importance)
 plt.show()
 ```
 
-2. Check feature statistics:
+Check feature statistics:
 
 ```python
 from features.pipeline import build_feature_panel
 features = build_feature_panel(datasets)
-print(features.describe())  # Check for NaN, outliers, scales
+print(features.describe())
 ```
 
-3. Run backtest with verbose output:
+### Change Configuration
+
+Edit `config/settings.py`. The entire pipeline uses these values.
 
 ```python
-from backtest.engine import backtest_strategy
-results = backtest_strategy(verbose=True)
-```
-
-#### Modify Configuration
-
-All system parameters are in `config/settings.py`. Change one place, entire pipeline updates:
-
-```python
-# In config/settings.py
 FEATURE_PARAMS = {
-    'rsi_period': 14,           # Change to 12
-    'macd_fast': 12,            # Change to 10
-    'bollinger_period': 20,     # Change to 25
+    'rsi_period': 14,
+    'macd_fast': 12,
 }
 
 MODEL_PARAMS = {
-    'learning_rate': 0.05,      # Change to 0.1
-    'max_depth': 7,             # Change to 10
-    'num_leaves': 31,
+    'learning_rate': 0.05,
+    'max_depth': 7,
 }
 ```
 
@@ -230,99 +161,15 @@ Then retrain:
 make train
 ```
 
----
+## Troubleshooting
 
-## Troubleshooting Development Issues
+| Issue | Solution |
+|-------|----------|
+| Import errors | Check all `__init__.py` files exist |
+| Data validation fails | Check `data/validate.py` expectations |
+| Model won't train | Reduce feature count or data window |
+| Streamlit cache issue | Delete `.streamlit/` and restart |
 
-| Issue | Diagnosis | Solution |
-|-------|-----------|----------|
-| Import errors | Module not in `__init__.py` | Check all `__init__.py` files exist |
-| Data validation fails | Missing columns | Check `data/validate.py` expectations |
-| Model won't train | Out of memory | Reduce feature count or data window |
-| Dashboard won't load | Streamlit cache issue | Delete `.streamlit/` cache and restart |
+## Questions?
 
----
-
-## Git Workflow
-
-```bash
-# Create feature branch
-git checkout -b feature/new-feature
-
-# Make changes, commit regularly
-git add .
-git commit -m "Add new feature with tests"
-
-# Push and create pull request
-git push origin feature/new-feature
-
-# After review, merge to main
-git checkout main
-git merge feature/new-feature
-git push origin main
-```
-
----
-
-## CI/CD Pipeline
-
-GitHub Actions runs on every push:
-
-- **Lint & Format:** Black, Pylint
-- **Tests:** pytest with coverage
-- **Type Checking:** mypy
-
-See `.github/workflows/ci.yml` for details.
-
----
-
-## Performance Profiling
-
-Identify bottlenecks:
-
-```python
-import cProfile
-import pstats
-
-cProfile.run('from features.pipeline import build_feature_panel; build_feature_panel(datasets)', 'stats.prof')
-
-stats = pstats.Stats('stats.prof')
-stats.sort_stats('cumulative').print_stats(20)  # Top 20 functions
-```
-
----
-
-## Documentation Updates
-
-- Update [ARCHITECTURE.md](ARCHITECTURE.md) if changing system design
-- Update [QUICKSTART.md](QUICKSTART.md) if changing setup process
-- Add docstrings to all public functions
-- Update this guide if adding new development workflows
-
----
-
-## Getting Help
-
-- **Questions on strategy?** Check [ARCHITECTURE.md](ARCHITECTURE.md)
-- **How do I setup?** See [QUICKSTART.md](QUICKSTART.md)
-- **Is there a bug?** Open an issue with reproduction steps
-- **Want to contribute?** Submit a PR with tests and documentation
-
----
-
-## Code Review Checklist
-
-Before submitting a PR:
-
-- [ ] Code follows PEP 8 style guide
-- [ ] All functions have docstrings
-- [ ] Type hints are included
-- [ ] Tests are added for new code
-- [ ] All existing tests pass (`pytest`)
-- [ ] No hardcoded values (use config)
-- [ ] Performance impact is acceptable
-- [ ] Documentation updated if needed
-
----
-
-**Last updated:** January 2025
+Check [Architecture](ARCHITECTURE.md) for system design, [Quickstart](QUICKSTART.md) for setup help, or open an issue.

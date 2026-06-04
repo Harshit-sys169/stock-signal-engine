@@ -1,106 +1,71 @@
-# Contributing to NSE-Alpha
+# Contributing
 
-Thank you for your interest in contributing! This guide explains how to report issues, suggest improvements, and submit code contributions.
+Thank you for your interest in contributing to this project. Here's how you can help.
 
-## Ways to Contribute
+## How to Contribute
 
-### 1. **Report Bugs**
-Found a bug? Open an issue with:
-- Description of the issue
+### Report Bugs
+
+Found an issue? Open a GitHub issue with:
+
+- Description of the problem
 - Steps to reproduce
 - Expected vs actual behavior
-- Your environment (Python version, OS, etc.)
+- Your environment (Python version, OS)
 
-### 2. **Suggest Features**
-Have an idea? Open a discussion with:
-- Clear description of the feature
-- Why it's useful for the project
-- Suggested implementation approach (if you have one)
+### Suggest Features
 
-### 3. **Improve Documentation**
-- Clarify existing guides
+Have an idea? Open an issue explaining:
+
+- What the feature would do
+- Why it's useful
+- Suggested implementation (if you have one)
+
+### Improve Documentation
+
+- Fix typos or unclear explanations
 - Add examples
-- Fix typos or errors
+- Clarify complex concepts
 
-### 4. **Submit Code**
+### Submit Code
+
+- Bug fixes
 - New features
 - Performance improvements
-- Bug fixes
 
 ## Before You Start
 
-1. **Check existing issues** — Maybe someone is already working on it
-2. **Discuss major changes** — Open an issue first to get feedback
-3. **Read the [Development Guide](DEVELOPMENT.md)** — Understand code style and testing
+1. Check existing issues - someone might already be working on it
+2. For major changes, open an issue to discuss first
+3. Read [Development](DEVELOPMENT.md) for code style and testing guidelines
 
-## Submitting a Pull Request
+## Pull Request Process
 
-### Step 1: Fork & Clone
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Make your changes
+4. Add tests for new code
+5. Commit with clear messages (`git commit -m "Description of changes"`)
+6. Push to your fork (`git push origin feature/your-feature`)
+7. Open a pull request
 
-```bash
-# Fork the repository on GitHub, then:
-git clone https://github.com/your-username/stock-signal-engine.git
-cd stock-signal-engine
-```
+In your PR description:
 
-### Step 2: Create a Feature Branch
-
-```bash
-git checkout -b feature/your-feature-name
-```
-
-### Step 3: Make Changes
-
-- Keep commits focused and logical
-- Write clear commit messages
-- Follow the code style (see [Development Guide](DEVELOPMENT.md))
-- Add tests for new code
-- Update documentation
-
-### Step 4: Test Your Changes
-
-```bash
-# Run tests
-pytest tests/ -v
-
-# Run linting
-black . && pylint . && mypy .
-```
-
-### Step 5: Push & Create PR
-
-```bash
-git push origin feature/your-feature-name
-```
-
-Then open a Pull Request on GitHub with:
-- Clear title (e.g., "Add new volatility indicator")
-- Description of changes
-- Reference to related issues (e.g., "Fixes #42")
-- Screenshot or metrics if applicable
-
-### Step 6: Code Review
-
-- Maintainers will review your code
-- Respond to feedback
-- Make requested changes
-- Once approved, we'll merge!
+- Explain what you changed and why
+- Reference related issues (e.g., "Fixes #42")
+- Include screenshots if relevant
 
 ## Code Guidelines
 
-See [DEVELOPMENT.md](DEVELOPMENT.md) for detailed guidelines on:
+See [Development](DEVELOPMENT.md) for detailed guidelines on:
+
 - Code style (PEP 8)
 - Type hints
-- Docstrings
 - Testing
 - Configuration management
 
 ## Questions?
 
-- **Setup help:** See [QUICKSTART.md](QUICKSTART.md)
-- **Architecture questions:** See [ARCHITECTURE.md](ARCHITECTURE.md)
-- **Development workflow:** See [DEVELOPMENT.md](DEVELOPMENT.md)
-
----
-
-**Thank you for making NSE-Alpha better!** 🎉
+- Setup issues: See [Getting Started](QUICKSTART.md)
+- Architecture questions: See [Architecture](ARCHITECTURE.md)
+- Development workflow: See [Development](DEVELOPMENT.md) 🎉
