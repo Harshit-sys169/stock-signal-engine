@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-and-check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install flake8 pyflakes
+
+      - name: Lint with flake8
+        run: |
+          # Stop on syntax errors or undefined names
+          flake8 config/ data/ features/ models/ backtest/ scripts/ dashboard/ \
+            --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Warnings only for style issues (no fail)
+          flake8 config/ data/ features/ models/ backtest/ scripts/ dashboard/ \
+            --count --max-line-length=120 --statistics --exit-zero
+
+      - name: Check all modules import cleanly
+        env:
+          FRED_API_KEY: "dummy_for_ci"
+        run: |
+          python -c "from config.settings import *; print('config OK')"
+          python -c "from data.universe import get_universe; u = get_universe(); print(f'universe OK: {len(u)} tickers')"
+          python -c "from features.technical import build_technical_features; print('features.technical OK')"
+          python -c "from features.macro import build_macro_features; print('features.macro OK')"
+          python -c "from features.pipeline import build_feature_panel; print('features.pipeline OK')"
+          python -c "from models.train import get_feature_columns; print('models.train OK')"
+          python -c "from models.predict import load_model; print('models.predict OK')"
+          python -c "from backtest.engine import run_backtest; print('backtest.engine OK')"
+          python -c "from backtest.metrics import compute_all_metrics; print('backtest.metrics OK')"
+          python -c "from backtest.report import generate_report; print('backtest.report OK')"
+          python -c "from data.validate import run_validation; print('data.validate OK')"
+
+      - name: Check universe size
+        run: |
+          python -c "
+          from data.universe import get_universe, NIFTY_50, NIFTY_NEXT_50
+          assert len(NIFTY_50) == 50, f'Expected 50 Nifty 50 tickers, got {len(NIFTY_50)}'
+          assert len(NIFTY_NEXT_50) == 50, f'Expected 50 Nifty Next 50 tickers, got {len(NIFTY_NEXT_50)}'
+          universe = get_universe()
+          assert len(universe) == 100, f'Expected 100 total tickers, got {len(universe)}'
+          print(f'Universe check passed: {len(universe)} tickers')
+          "
+
+      - name: Validate settings are self-consistent
+        run: |
+          python -c "
+          from config.settings import (
+              BUY_THRESHOLD, SELL_THRESHOLD,
+              STOP_LOSS_PCT, TAKE_PROFIT_PCT,
+              MIN_CONFIDENCE, MAX_OPEN_POSITIONS,
+              POSITION_SIZE_PCT, MIN_CASH_BUFFER_PCT,
+          )
+          assert BUY_THRESHOLD > 0
+          assert SELL_THRESHOLD < 0
+          assert STOP_LOSS_PCT < 0
+          assert TAKE_PROFIT_PCT > 0
+          assert 0.5 <= MIN_CONFIDENCE <= 1.0
+          assert MAX_OPEN_POSITIONS > 0
+          assert POSITION_SIZE_PCT * MAX_OPEN_POSITIONS <= (1 - MIN_CASH_BUFFER_PCT) + 0.01
+          print('Settings validation passed')
+          "

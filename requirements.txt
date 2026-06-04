@@ -1,0 +1,44 @@
+# ─────────────────────────────────────────────
+# NSE-Alpha v1 — Python dependencies
+# Install with: pip install -r requirements.txt
+# Python 3.11+ recommended
+# ─────────────────────────────────────────────
+
+# Data
+yfinance>=0.2.38
+pandas>=2.1.0
+numpy>=1.26.0
+fredapi>=0.5.1
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# Technical indicators
+pandas-ta>=0.3.14b
+
+# Machine learning
+scikit-learn>=1.4.0
+lightgbm>=4.3.0
+xgboost>=2.0.0
+
+# Deep learning (optional — comment out if not using LSTM)
+# torch>=2.2.0
+
+# Backtesting & evaluation
+vectorbt>=0.26.1
+
+# Visualisation (notebook + dashboard)
+matplotlib>=3.8.0
+seaborn>=0.13.0
+plotly>=5.20.0
+
+# Dashboard (Phase 3)
+streamlit>=1.32.0
+
+# Utilities
+tqdm>=4.66.0
+joblib>=1.3.0
+pyarrow>=15.0.0
+
+# Notebook
+jupyter>=1.0.0
+ipykernel>=6.29.0
